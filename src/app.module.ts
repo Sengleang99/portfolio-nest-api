@@ -7,6 +7,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CategoriesModule } from './categories/categories.module';
 import { ApiKeyGuard } from './common/guards/api-key.guard';
+import { ExperiencesModule } from './experiences/experiences.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ApiKeyGuard } from './common/guards/api-key.guard';
       inject: [ConfigService],
     }),
     CategoriesModule,
+    ExperiencesModule,
   ],
   controllers: [AppController],
   providers: [
