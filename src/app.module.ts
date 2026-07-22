@@ -11,6 +11,7 @@ import { ApiKeyGuard } from './common/guards/api-key.guard';
 import { ExperiencesModule } from './experiences/experiences.module';
 import { CaseStudiesModule } from './case-studies/case-studies.module';
 import { ContactsModule } from './contacts/contacts.module';
+import { EducationsModule } from './educations/educations.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -40,6 +41,7 @@ import { UsersModule } from './users/users.module';
     ExperiencesModule,
     CaseStudiesModule,
     ContactsModule,
+    EducationsModule,
   ],
   controllers: [AppController],
   providers: [
