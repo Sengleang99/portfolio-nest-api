@@ -9,6 +9,8 @@ import { AuthModule } from './auth/auth.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ApiKeyGuard } from './common/guards/api-key.guard';
 import { ExperiencesModule } from './experiences/experiences.module';
+import { CaseStudiesModule } from './case-studies/case-studies.module';
+import { ContactsModule } from './contacts/contacts.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -36,6 +38,8 @@ import { UsersModule } from './users/users.module';
     AuthModule,
     CategoriesModule,
     ExperiencesModule,
+    CaseStudiesModule,
+    ContactsModule,
   ],
   controllers: [AppController],
   providers: [
