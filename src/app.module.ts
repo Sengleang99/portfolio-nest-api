@@ -5,9 +5,11 @@ import { MongooseModule } from '@nestjs/mongoose';
 import * as Joi from 'joi';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ApiKeyGuard } from './common/guards/api-key.guard';
 import { ExperiencesModule } from './experiences/experiences.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -17,6 +19,10 @@ import { ExperiencesModule } from './experiences/experiences.module';
         PORT: Joi.number().default(3001),
         MONGODB_URI: Joi.string().required(),
         'x-api-key': Joi.string().required(),
+        JWT_ACCESS_SECRET: Joi.string().required(),
+        JWT_ACCESS_EXPIRES_IN: Joi.string().default('15m'),
+        JWT_REFRESH_SECRET: Joi.string().required(),
+        JWT_REFRESH_EXPIRES_IN: Joi.string().default('7d'),
       }),
     }),
     MongooseModule.forRootAsync({
@@ -26,6 +32,8 @@ import { ExperiencesModule } from './experiences/experiences.module';
       }),
       inject: [ConfigService],
     }),
+    UsersModule,
+    AuthModule,
     CategoriesModule,
     ExperiencesModule,
   ],
