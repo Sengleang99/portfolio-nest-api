@@ -109,6 +109,10 @@ export class ContactsService {
     };
   }
 
+  async count(): Promise<number> {
+    return this.contactModel.countDocuments().exec();
+  }
+
   private validateObjectId(id: string): void {
     if (!isValidObjectId(id)) {
       throw new BadRequestException(`Invalid ID format: "${id}"`);

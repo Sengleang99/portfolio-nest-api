@@ -136,6 +136,10 @@ export class CategoriesService {
     };
   }
 
+  async count(): Promise<number> {
+    return this.categoryModel.countDocuments().exec();
+  }
+
   private validateObjectId(id: string): void {
     if (!isValidObjectId(id)) {
       throw new BadRequestException(`Invalid ID format: "${id}"`);

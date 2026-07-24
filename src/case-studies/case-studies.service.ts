@@ -115,6 +115,10 @@ export class CaseStudiesService {
     };
   }
 
+  async count(): Promise<number> {
+    return this.caseStudyModel.countDocuments().exec();
+  }
+
   private validateObjectId(id: string): void {
     if (!isValidObjectId(id)) {
       throw new BadRequestException(`Invalid ID format: "${id}"`);

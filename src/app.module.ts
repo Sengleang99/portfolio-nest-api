@@ -13,6 +13,7 @@ import { CaseStudiesModule } from './case-studies/case-studies.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { EducationsModule } from './educations/educations.module';
 import { UsersModule } from './users/users.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { UsersModule } from './users/users.module';
     CaseStudiesModule,
     ContactsModule,
     EducationsModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [
