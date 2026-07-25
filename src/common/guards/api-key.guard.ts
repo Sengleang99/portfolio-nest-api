@@ -13,7 +13,7 @@ export class ApiKeyGuard implements CanActivate {
   constructor(
     private readonly configService: ConfigService,
     private readonly reflector: Reflector,
-  ) {}
+  ) { }
 
   canActivate(context: ExecutionContext): boolean {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
@@ -28,12 +28,12 @@ export class ApiKeyGuard implements CanActivate {
     const request = context
       .switchToHttp()
       .getRequest<{ headers: Record<string, string | string[] | undefined> }>();
-    const apiKeyHeader = request.headers['x-api-key'];
+    const apiKeyHeader = request.headers['X_API_KEY'];
     const apiKey = Array.isArray(apiKeyHeader) ? apiKeyHeader[0] : apiKeyHeader;
-    const validApiKey = this.configService.get<string>('x-api-key');
+    const validApiKey = this.configService.get<string>('X_API_KEY');
 
     if (!apiKey || apiKey !== validApiKey) {
-      throw new UnauthorizedException('Invalid or missing x-api-key in header');
+      throw new UnauthorizedException('Invalid or missing X_API_KEY in header');
     }
 
     return true;

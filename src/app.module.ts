@@ -22,7 +22,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
       validationSchema: Joi.object({
         PORT: Joi.number().default(3001),
         MONGODB_URI: Joi.string().required(),
-        'x-api-key': Joi.string().required(),
+        'X_API_KEY': Joi.string().required(),
         JWT_ACCESS_SECRET: Joi.string().required(),
         JWT_ACCESS_EXPIRES_IN: Joi.string().default('15m'),
         JWT_REFRESH_SECRET: Joi.string().required(),
@@ -54,4 +54,4 @@ import { DashboardModule } from './dashboard/dashboard.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }
