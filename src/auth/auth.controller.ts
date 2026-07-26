@@ -49,4 +49,11 @@ export class AuthController {
   async logout(@GetCurrentUser('sub') userId: string) {
     return this.authService.logout(userId);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('signout')
+  @HttpCode(HttpStatus.OK)
+  async signout(@GetCurrentUser('sub') userId: string) {
+    return this.authService.signout(userId);
+  }
 }

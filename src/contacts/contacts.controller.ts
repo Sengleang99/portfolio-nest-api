@@ -19,7 +19,7 @@ import { UpdateContactDto } from './dto/update-contact.dto';
 
 @Controller('contacts')
 export class ContactsController {
-  constructor(private readonly contactsService: ContactsService) { }
+  constructor(private readonly contactsService: ContactsService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)

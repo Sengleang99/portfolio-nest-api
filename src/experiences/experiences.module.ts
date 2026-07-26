@@ -10,10 +10,10 @@ import { AuthModule } from 'src/auth/auth.module';
     MongooseModule.forFeature([
       { name: Experience.name, schema: ExperienceSchema },
     ]),
-    AuthModule
+    AuthModule,
   ],
   controllers: [ExperiencesController],
   providers: [ExperiencesService],
   exports: [ExperiencesService, MongooseModule],
 })
-export class ExperiencesModule { }
+export class ExperiencesModule {}

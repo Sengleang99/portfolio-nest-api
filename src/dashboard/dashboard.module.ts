@@ -7,12 +7,7 @@ import { DashboardController } from './dashboard.controller';
 import { DashboardService } from './dashboard.service';
 
 @Module({
-  imports: [
-    AuthModule,
-    CaseStudiesModule,
-    CategoriesModule,
-    ContactsModule,
-  ],
+  imports: [AuthModule, CaseStudiesModule, CategoriesModule, ContactsModule],
   controllers: [DashboardController],
   providers: [DashboardService],
 })

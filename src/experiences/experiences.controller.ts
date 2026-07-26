@@ -19,7 +19,7 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('experiences')
 export class ExperiencesController {
-  constructor(private readonly experiencesService: ExperiencesService) { }
+  constructor(private readonly experiencesService: ExperiencesService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)

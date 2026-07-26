@@ -82,6 +82,11 @@ export class AuthService {
     return { message: 'Logged out successfully' };
   }
 
+  async signout(userId: string) {
+    await this.usersService.updateRefreshTokenHash(userId, null);
+    return { message: 'Signed out successfully' };
+  }
+
   async refreshTokens(userId: string, refreshToken: string): Promise<Tokens> {
     const user = await this.usersService.findByIdWithRefreshToken(userId);
     if (!user || !user.refreshTokenHash) {
