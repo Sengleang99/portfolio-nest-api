@@ -63,7 +63,7 @@ export class Experience {
   @Prop({
     required: true,
     enum: ExperienceStatus,
-    default: ExperienceStatus.JUNIOR,
+    default: ExperienceStatus.FULL_TIME,
     index: true,
   })
   status: ExperienceStatus;
