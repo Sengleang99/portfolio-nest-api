@@ -10,7 +10,11 @@ import {
   Post,
   Query,
   UseGuards,
+  Sse,
+  MessageEvent,
 } from '@nestjs/common';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ContactsService } from './contacts.service';
 import { CreateContactDto } from './dto/create-contact.dto';
@@ -20,6 +24,15 @@ import { UpdateContactDto } from './dto/update-contact.dto';
 @Controller('contacts')
 export class ContactsController {
   constructor(private readonly contactsService: ContactsService) {}
+
+  @Sse('stream')
+  stream(): Observable<MessageEvent> {
+    return this.contactsService.getContactStream().pipe(
+      map(() => ({
+        data: { type: 'new-message' },
+      })),
+    );
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)

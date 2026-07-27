@@ -10,16 +10,26 @@ import { QueryContactDto } from './dto/query-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
 import { Contact, ContactDocument } from './schemas/contact.schema';
 
+import { Subject } from 'rxjs';
+
 @Injectable()
 export class ContactsService {
+  private readonly contactStream$ = new Subject<void>();
+
   constructor(
     @InjectModel(Contact.name)
     private readonly contactModel: Model<ContactDocument>,
   ) {}
 
+  getContactStream() {
+    return this.contactStream$.asObservable();
+  }
+
   async create(createContactDto: CreateContactDto): Promise<Contact> {
     const createdContact = new this.contactModel(createContactDto);
-    return createdContact.save();
+    const result = await createdContact.save();
+    this.contactStream$.next();
+    return result;
   }
 
   async findAll(queryDto: QueryContactDto) {
