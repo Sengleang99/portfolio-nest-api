@@ -47,6 +47,14 @@ export class Contact {
     trim: true,
   })
   message: string;
+
+  @Prop({
+    type: String,
+    enum: ['read', 'unread'],
+    default: 'unread',
+    index: true,
+  })
+  status: string;
 }
 
 export const ContactSchema = SchemaFactory.createForClass(Contact);
