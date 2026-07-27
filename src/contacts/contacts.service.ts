@@ -9,8 +9,10 @@ import { CreateContactDto } from './dto/create-contact.dto';
 import { QueryContactDto } from './dto/query-contact.dto';
 import { UpdateContactDto } from './dto/update-contact.dto';
 import { Contact, ContactDocument } from './schemas/contact.schema';
+import { ConfigService } from '@nestjs/config';
 
 import { Subject } from 'rxjs';
+import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class ContactsService {
@@ -19,6 +21,7 @@ export class ContactsService {
   constructor(
     @InjectModel(Contact.name)
     private readonly contactModel: Model<ContactDocument>,
+    private readonly configService: ConfigService,
   ) {}
 
   getContactStream() {
@@ -121,6 +124,51 @@ export class ContactsService {
 
   async count(): Promise<number> {
     return this.contactModel.countDocuments().exec();
+  }
+
+  async sendReply(id: string, replyMessage: string): Promise<any> {
+    const contact = await this.findOne(id);
+
+    console.log(`Sending reply to ${contact.email} for message: "${contact.message}"`);
+    console.log(`Reply content: "${replyMessage}"`);
+
+    // Auto mark as read on reply
+    if ((contact as any).status !== 'read') {
+      await this.update(id, { status: 'read' });
+      this.contactStream$.next(); // notify dashboard real-time
+    }
+
+    const host = this.configService.get<string>('SMTP_HOST');
+    const port = this.configService.get<number>('SMTP_PORT') ?? 587;
+    const user = this.configService.get<string>('SMTP_USER');
+    const pass = this.configService.get<string>('SMTP_PASS');
+
+    if (!host || !user || !pass) {
+      console.warn('SMTP settings missing (SMTP_HOST, SMTP_USER, SMTP_PASS). Simulating mail send.');
+      return {
+        message: 'Reply simulated successfully (SMTP credentials missing).',
+        simulated: true,
+      };
+    }
+
+    const transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: { user, pass },
+    });
+
+    await transporter.sendMail({
+      from: `"Portfolio Support" <${user}>`,
+      to: contact.email,
+      subject: `Re: Contact Inquiry from ${contact.username}`,
+      text: replyMessage,
+    });
+
+    return {
+      message: 'Reply sent successfully.',
+      simulated: false,
+    };
   }
 
   private validateObjectId(id: string): void {

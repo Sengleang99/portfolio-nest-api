@@ -67,4 +67,11 @@ export class ContactsController {
   remove(@Param('id') id: string) {
     return this.contactsService.remove(id);
   }
+
+  @Post(':id/reply')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  reply(@Param('id') id: string, @Body('message') message: string) {
+    return this.contactsService.sendReply(id, message);
+  }
 }
