@@ -55,6 +55,17 @@ export class Contact {
     index: true,
   })
   status: string;
+
+  @Prop({
+    type: [
+      {
+        message: { type: String, required: true },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
+    default: [],
+  })
+  replies: { message: string; createdAt: Date }[];
 }
 
 export const ContactSchema = SchemaFactory.createForClass(Contact);

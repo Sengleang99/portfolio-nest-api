@@ -132,11 +132,29 @@ export class ContactsService {
     console.log(`Sending reply to ${contact.email} for message: "${contact.message}"`);
     console.log(`Reply content: "${replyMessage}"`);
 
-    // Auto mark as read on reply
-    if ((contact as any).status !== 'read') {
-      await this.update(id, { status: 'read' });
-      this.contactStream$.next(); // notify dashboard real-time
+    // Push reply to replies array and mark status as read in DB
+    const updatedContact = await this.contactModel
+      .findByIdAndUpdate(
+        id,
+        {
+          $push: {
+            replies: {
+              message: replyMessage,
+              createdAt: new Date(),
+            },
+          },
+          status: 'read',
+        },
+        { new: true },
+      )
+      .lean({ virtuals: true })
+      .exec();
+
+    if (!updatedContact) {
+      throw new NotFoundException(`Contact message with ID "${id}" not found`);
     }
+
+    this.contactStream$.next(); // notify dashboard real-time
 
     const host = this.configService.get<string>('SMTP_HOST');
     const port = this.configService.get<number>('SMTP_PORT') ?? 587;
@@ -148,6 +166,7 @@ export class ContactsService {
       return {
         message: 'Reply simulated successfully (SMTP credentials missing).',
         simulated: true,
+        data: updatedContact,
       };
     }
 
@@ -168,6 +187,7 @@ export class ContactsService {
     return {
       message: 'Reply sent successfully.',
       simulated: false,
+      data: updatedContact,
     };
   }
 
