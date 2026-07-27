@@ -22,7 +22,7 @@ export class ContactsService {
     @InjectModel(Contact.name)
     private readonly contactModel: Model<ContactDocument>,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   getContactStream() {
     return this.contactStream$.asObservable();
@@ -177,18 +177,72 @@ export class ContactsService {
       auth: { user, pass },
     });
 
-    await transporter.sendMail({
-      from: `"Portfolio Support" <${user}>`,
-      to: contact.email,
-      subject: `Re: Contact Inquiry from ${contact.username}`,
-      text: replyMessage,
-    });
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; color: #334155; margin: 0; padding: 20px; }
+          .container { max-width: 600px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin: 0 auto; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+          .header { background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); color: #ffffff; padding: 30px 24px; text-align: center; }
+          .header h2 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+          .content { padding: 24px; line-height: 1.6; }
+          .message-bubble { background-color: #f1f5f9; border-left: 4px solid #4f46e5; padding: 16px; border-radius: 4px 8px 8px 4px; margin-bottom: 24px; font-size: 15px; color: #1e293b; }
+          .original-bubble { background-color: #f8fafc; border-left: 4px solid #cbd5e1; padding: 12px 16px; border-radius: 4px; font-size: 13px; color: #64748b; margin-top: 24px; }
+          .footer { text-align: center; padding: 20px; font-size: 12px; color: #94a3b8; border-top: 1px solid #f1f5f9; background-color: #fafafa; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h2>Response to Your Inquiry</h2>
+          </div>
+          <div class="content">
+            <p>Hello <strong>${contact.username}</strong>,</p>
+            <p>Thank you for reaching out. Here is the reply to your inquiry:</p>
+            
+            <div class="message-bubble">
+              ${replyMessage.replace(/\n/g, '<br>')}
+            </div>
+            
+            <div class="original-bubble">
+              <strong style="display: block; margin-bottom: 4px; color: #475569;">Your Original Message:</strong>
+              <em>"${contact.message}"</em>
+            </div>
+          </div>
+          <div class="footer">
+            This is an automated response from my portfolio contact form.
+            <br>
+            © ${new Date().getFullYear()} Support Team. All rights reserved.
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
 
-    return {
-      message: 'Reply sent successfully.',
-      simulated: false,
-      data: updatedContact,
-    };
+    try {
+      await transporter.sendMail({
+        from: `"Portfolio Support" <${user}>`,
+        to: contact.email,
+        subject: `Re: Contact Inquiry from ${contact.username}`,
+        text: replyMessage,
+        html: htmlContent,
+      });
+
+      return {
+        message: 'Reply sent successfully.',
+        simulated: false,
+        data: updatedContact,
+      };
+    } catch (mailError: any) {
+      console.error('SMTP Mail transmission failure:', mailError);
+      return {
+        message: `Reply saved, but email delivery failed.`,
+        simulated: false,
+        data: updatedContact,
+      };
+    }
   }
 
   private validateObjectId(id: string): void {
