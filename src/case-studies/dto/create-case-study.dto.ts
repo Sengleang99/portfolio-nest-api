@@ -36,10 +36,10 @@ export class CreateCaseStudyDto {
   imageUrl?: string;
 
   @IsString()
-  @IsNotEmpty()
-  githubUrl: string;
+  @IsOptional()
+  githubUrl?: string;
 
   @IsString()
-  @IsNotEmpty()
-  demoUrl: string;
+  @IsOptional()
+  demoUrl?: string;
 }

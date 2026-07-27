@@ -66,16 +66,14 @@ export class CaseStudy {
   imageUrl?: string;
 
   @Prop({
-    required: true,
     trim: true,
   })
-  githubUrl: string;
+  githubUrl?: string;
 
   @Prop({
-    required: true,
     trim: true,
   })
-  demoUrl: string;
+  demoUrl?: string;
 }
 
 export const CaseStudySchema = SchemaFactory.createForClass(CaseStudy);

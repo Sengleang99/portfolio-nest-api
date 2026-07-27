@@ -34,7 +34,7 @@ export class CreateExperienceDto {
   descr?: string;
 
   @IsEnum(ExperienceStatus, {
-    message: 'status must be one of: intern, junior, mid, senior, lead',
+    message: `status must be one of: ${Object.values(ExperienceStatus).join(', ')}`,
   })
   @IsNotEmpty()
   status: ExperienceStatus;
