@@ -91,7 +91,7 @@ export class ContactsService {
 
     const updatedContact = await this.contactModel
       .findByIdAndUpdate(id, updateContactDto, {
-        new: true,
+        returnDocument: 'after',
         runValidators: true,
       })
       .lean({ virtuals: true })
@@ -145,7 +145,7 @@ export class ContactsService {
           },
           status: 'read',
         },
-        { new: true },
+        { returnDocument: 'after' },
       )
       .lean({ virtuals: true })
       .exec();
