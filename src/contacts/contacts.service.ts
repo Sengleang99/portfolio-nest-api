@@ -156,13 +156,20 @@ export class ContactsService {
 
     this.contactStream$.next(); // notify dashboard real-time
 
-    const host = this.configService.get<string>('SMTP_HOST');
-    const port = this.configService.get<number>('SMTP_PORT') ?? 587;
-    const user = this.configService.get<string>('SMTP_USER');
-    const pass = this.configService.get<string>('SMTP_PASS');
+    const rawHost = this.configService.get<string>('SMTP_HOST') || process.env.SMTP_HOST || '';
+    const rawPort = (this.configService.get<string | number>('SMTP_PORT') || process.env.SMTP_PORT || '587').toString();
+    const rawUser = this.configService.get<string>('SMTP_USER') || process.env.SMTP_USER || '';
+    const rawPass = this.configService.get<string>('SMTP_PASS') || process.env.SMTP_PASS || '';
+
+    const host = rawHost.replace(/^["']|["']$/g, '').trim();
+    const port = parseInt(rawPort.replace(/^["']|["']$/g, '').trim(), 10) || 587;
+    const user = rawUser.replace(/^["']|["']$/g, '').trim();
+    const pass = rawPass.replace(/^["']|["']$/g, '').trim();
 
     if (!host || !user || !pass) {
-      console.warn('SMTP settings missing (SMTP_HOST, SMTP_USER, SMTP_PASS). Simulating mail send.');
+      console.warn(
+        `SMTP settings incomplete -> HOST: "${host}", USER: "${user}", PASS: "${pass ? '***' : ''}". Simulating mail send.`,
+      );
       return {
         message: 'Reply simulated successfully (SMTP credentials missing).',
         simulated: true,
