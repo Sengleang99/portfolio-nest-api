@@ -183,16 +183,18 @@ export class ContactsService {
     const isGmail = host.toLowerCase().includes('gmail');
     const transporter = nodemailer.createTransport(
       isGmail
-        ? {
+        ? ({
             service: 'gmail',
             auth: { user, pass },
-          }
-        : {
+            family: 4,
+          } as any)
+        : ({
             host,
             port,
             secure: port === 465,
             auth: { user, pass },
-          },
+            family: 4,
+          } as any),
     );
 
     const htmlContent = `
