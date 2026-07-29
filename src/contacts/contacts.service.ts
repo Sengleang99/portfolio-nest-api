@@ -167,8 +167,11 @@ export class ContactsService {
     const pass = rawPass.replace(/^["']|["']$/g, '').trim();
 
     if (!host || !user || !pass) {
+      const availableEnvKeys = Object.keys(process.env).filter(
+        (k) => k.startsWith('SMTP_') || k.includes('PORT') || k.includes('MONGODB'),
+      );
       console.warn(
-        `SMTP settings incomplete -> HOST: "${host}", USER: "${user}", PASS: "${pass ? '***' : ''}". Simulating mail send.`,
+        `SMTP settings incomplete -> HOST: "${host}", USER: "${user}", PASS: "${pass ? '***' : ''}". Detected keys: [${availableEnvKeys.join(', ')}]. Simulating mail send.`,
       );
       return {
         message: 'Reply simulated successfully (SMTP credentials missing).',
