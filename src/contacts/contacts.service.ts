@@ -12,7 +12,7 @@ import { Contact, ContactDocument } from './schemas/contact.schema';
 import { ConfigService } from '@nestjs/config';
 
 import { Subject } from 'rxjs';
-import * as nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 @Injectable()
 export class ContactsService {
@@ -156,46 +156,17 @@ export class ContactsService {
 
     this.contactStream$.next(); // notify dashboard real-time
 
-    const rawHost = this.configService.get<string>('SMTP_HOST') || process.env.SMTP_HOST || '';
-    const rawPort = (this.configService.get<string | number>('SMTP_PORT') || process.env.SMTP_PORT || '587').toString();
-    const rawUser = this.configService.get<string>('SMTP_USER') || process.env.SMTP_USER || '';
-    const rawPass = this.configService.get<string>('SMTP_PASS') || process.env.SMTP_PASS || '';
+    const resendApiKey = (this.configService.get<string>('RESEND_API_KEY') || process.env.RESEND_API_KEY || '').trim();
+    const fromEmail = (this.configService.get<string>('RESEND_FROM_EMAIL') || process.env.RESEND_FROM_EMAIL || '').trim();
 
-    const host = rawHost.replace(/^["']|["']$/g, '').trim();
-    const port = parseInt(rawPort.replace(/^["']|["']$/g, '').trim(), 10) || 587;
-    const user = rawUser.replace(/^["']|["']$/g, '').trim();
-    const pass = rawPass.replace(/^["']|["']$/g, '').trim();
-
-    if (!host || !user || !pass) {
-      const allKeys = Object.keys(process.env).filter(
-        (k) => !k.startsWith('npm_') && !k.startsWith('NODE_') && !k.startsWith('V8_'),
-      );
-      console.warn(
-        `SMTP settings incomplete -> HOST: "${host}", USER: "${user}", PASS: "${pass ? '***' : ''}". All env keys in Node: [${allKeys.join(', ')}]. Simulating mail send.`,
-      );
+    if (!resendApiKey || !fromEmail) {
+      console.warn(`Resend not configured -> RESEND_API_KEY: "${resendApiKey ? '***' : ''}", RESEND_FROM_EMAIL: "${fromEmail}". Simulating mail send.`);
       return {
-        message: 'Reply simulated successfully (SMTP credentials missing).',
+        message: 'Reply simulated successfully (Resend credentials missing).',
         simulated: true,
         data: updatedContact,
       };
     }
-
-    const isGmail = host.toLowerCase().includes('gmail');
-    const transporter = nodemailer.createTransport(
-      isGmail
-        ? ({
-            service: 'gmail',
-            auth: { user, pass },
-            family: 4,
-          } as any)
-        : ({
-            host,
-            port,
-            secure: port === 465,
-            auth: { user, pass },
-            family: 4,
-          } as any),
-    );
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -234,7 +205,7 @@ export class ContactsService {
           <div class="footer">
             This is an automated response from my portfolio contact form.
             <br>
-            © ${new Date().getFullYear()} Support Team. All rights reserved.
+            &copy; ${new Date().getFullYear()} Support Team. All rights reserved.
           </div>
         </div>
       </body>
@@ -242,23 +213,35 @@ export class ContactsService {
     `;
 
     try {
-      await transporter.sendMail({
-        from: `"Portfolio Support" <${user}>`,
+      const resend = new Resend(resendApiKey);
+      const { error } = await resend.emails.send({
+        from: fromEmail,
         to: contact.email,
         subject: `Re: Contact Inquiry from ${contact.username}`,
         text: replyMessage,
         html: htmlContent,
       });
 
+      if (error) {
+        console.error('Resend email delivery error:', error);
+        return {
+          message: 'Reply saved, but email delivery failed.',
+          simulated: false,
+          error: error.message,
+          data: updatedContact,
+        };
+      }
+
+      console.log(`Reply email sent successfully via Resend to ${contact.email}`);
       return {
         message: 'Reply sent successfully.',
         simulated: false,
         data: updatedContact,
       };
     } catch (mailError: any) {
-      console.error('SMTP Mail transmission failure:', mailError);
+      console.error('Resend exception:', mailError);
       return {
-        message: `Reply saved, but email delivery failed.`,
+        message: 'Reply saved, but email delivery failed.',
         simulated: false,
         data: updatedContact,
       };

@@ -27,10 +27,8 @@ import { DashboardModule } from './dashboard/dashboard.module';
         JWT_ACCESS_EXPIRES_IN: Joi.string().default('15m'),
         JWT_REFRESH_SECRET: Joi.string().required(),
         JWT_REFRESH_EXPIRES_IN: Joi.string().default('7d'),
-        SMTP_HOST: Joi.string().optional().allow(''),
-        SMTP_PORT: Joi.number().optional().default(587),
-        SMTP_USER: Joi.string().optional().allow(''),
-        SMTP_PASS: Joi.string().optional().allow(''),
+        RESEND_API_KEY: Joi.string().optional().allow(''),
+        RESEND_FROM_EMAIL: Joi.string().optional().allow(''),
       }),
     }),
     MongooseModule.forRootAsync({
