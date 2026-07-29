@@ -12,7 +12,7 @@ import { Contact, ContactDocument } from './schemas/contact.schema';
 import { ConfigService } from '@nestjs/config';
 
 import { Subject } from 'rxjs';
-import { Resend } from 'resend';
+import * as sgMail from '@sendgrid/mail';
 
 @Injectable()
 export class ContactsService {
@@ -156,13 +156,13 @@ export class ContactsService {
 
     this.contactStream$.next(); // notify dashboard real-time
 
-    const resendApiKey = (this.configService.get<string>('RESEND_API_KEY') || process.env.RESEND_API_KEY || '').trim();
-    const fromEmail = (this.configService.get<string>('RESEND_FROM_EMAIL') || process.env.RESEND_FROM_EMAIL || '').trim();
+    const sendgridApiKey = (this.configService.get<string>('SENDGRID_API_KEY') || process.env.SENDGRID_API_KEY || '').trim();
+    const fromEmail = (this.configService.get<string>('SENDGRID_FROM_EMAIL') || process.env.SENDGRID_FROM_EMAIL || '').trim();
 
-    if (!resendApiKey || !fromEmail) {
-      console.warn(`Resend not configured -> RESEND_API_KEY: "${resendApiKey ? '***' : ''}", RESEND_FROM_EMAIL: "${fromEmail}". Simulating mail send.`);
+    if (!sendgridApiKey || !fromEmail) {
+      console.warn(`SendGrid not configured -> SENDGRID_API_KEY: "${sendgridApiKey ? '***' : ''}", SENDGRID_FROM_EMAIL: "${fromEmail}". Simulating mail send.`);
       return {
-        message: 'Reply simulated successfully (Resend credentials missing).',
+        message: 'Reply simulated successfully (SendGrid credentials missing).',
         simulated: true,
         data: updatedContact,
       };
@@ -213,8 +213,8 @@ export class ContactsService {
     `;
 
     try {
-      const resend = new Resend(resendApiKey);
-      const { error } = await resend.emails.send({
+      sgMail.setApiKey(sendgridApiKey);
+      await sgMail.send({
         from: fromEmail,
         to: contact.email,
         subject: `Re: Contact Inquiry from ${contact.username}`,
@@ -222,24 +222,14 @@ export class ContactsService {
         html: htmlContent,
       });
 
-      if (error) {
-        console.error('Resend email delivery error:', error);
-        return {
-          message: 'Reply saved, but email delivery failed.',
-          simulated: false,
-          error: error.message,
-          data: updatedContact,
-        };
-      }
-
-      console.log(`Reply email sent successfully via Resend to ${contact.email}`);
+      console.log(`Reply email sent successfully via SendGrid to ${contact.email}`);
       return {
         message: 'Reply sent successfully.',
         simulated: false,
         data: updatedContact,
       };
     } catch (mailError: any) {
-      console.error('Resend exception:', mailError);
+      console.error('SendGrid email delivery error:', mailError?.response?.body || mailError);
       return {
         message: 'Reply saved, but email delivery failed.',
         simulated: false,
