@@ -23,7 +23,7 @@ export class ContactsService {
     @InjectModel(Contact.name)
     private readonly contactModel: Model<ContactDocument>,
     private readonly configService: ConfigService,
-  ) { }
+  ) {}
 
   getContactStream() {
     return this.contactStream$.asObservable();
@@ -130,7 +130,9 @@ export class ContactsService {
   async sendReply(id: string, replyMessage: string): Promise<any> {
     const contact = await this.findOne(id);
 
-    console.log(`Sending reply to ${contact.email} for message: "${contact.message}"`);
+    console.log(
+      `Sending reply to ${contact.email} for message: "${contact.message}"`,
+    );
     console.log(`Reply content: "${replyMessage}"`);
 
     // Push reply to replies array and mark status as read in DB
@@ -157,13 +159,23 @@ export class ContactsService {
 
     this.contactStream$.next(); // notify dashboard real-time
 
-    const smtpHost = this.configService.get<string>('SMTP_HOST') || process.env.SMTP_HOST;
-    const smtpPort = parseInt(this.configService.get<string>('SMTP_PORT') || process.env.SMTP_PORT || '587', 10);
-    const smtpUser = this.configService.get<string>('SMTP_USER') || process.env.SMTP_USER;
-    const smtpPass = this.configService.get<string>('SMTP_PASS') || process.env.SMTP_PASS;
+    const smtpHost =
+      this.configService.get<string>('SMTP_HOST') || process.env.SMTP_HOST;
+    const smtpPort = parseInt(
+      this.configService.get<string>('SMTP_PORT') ||
+        process.env.SMTP_PORT ||
+        '587',
+      10,
+    );
+    const smtpUser =
+      this.configService.get<string>('SMTP_USER') || process.env.SMTP_USER;
+    const smtpPass =
+      this.configService.get<string>('SMTP_PASS') || process.env.SMTP_PASS;
 
     if (!smtpHost || !smtpUser || !smtpPass) {
-      console.warn('SMTP not configured -> SMTP_HOST / SMTP_USER / SMTP_PASS missing. Simulating mail send.');
+      console.warn(
+        'SMTP not configured -> SMTP_HOST / SMTP_USER / SMTP_PASS missing. Simulating mail send.',
+      );
       return {
         message: 'Reply simulated successfully (SMTP credentials missing).',
         simulated: true,
@@ -216,28 +228,44 @@ export class ContactsService {
     `;
 
     try {
-      if (dns.setDefaultResultOrder) {
-        dns.setDefaultResultOrder('ipv4first');
-      }
-
-      const isGmail = smtpHost.includes('gmail');
-      const transporterOptions: any = isGmail
-        ? {
-            service: 'gmail',
-            auth: {
-              user: smtpUser,
-              pass: smtpPass,
+      const isSecure = smtpPort === 465;
+      const transporterOptions: nodemailer.TransportOptions = {
+        host: smtpHost,
+        port: smtpPort,
+        secure: isSecure,
+        ...(isSecure ? {} : { requireTLS: true }),
+        auth: {
+          user: smtpUser,
+          pass: smtpPass,
+        },
+        lookup: (
+          hostname: string,
+          _options: unknown,
+          callback: (
+            err: NodeJS.ErrnoException | null,
+            address?: string,
+            family?: number,
+          ) => void,
+        ) => {
+          dns.lookup(
+            hostname,
+            { family: 4 },
+            (
+              err: NodeJS.ErrnoException | null,
+              address: string | dns.LookupAddress[],
+              family: number,
+            ) => {
+              const targetAddress =
+                typeof address === 'string'
+                  ? address
+                  : Array.isArray(address) && address[0]
+                    ? address[0].address
+                    : undefined;
+              callback(err, targetAddress, family);
             },
-          }
-        : {
-            host: smtpHost,
-            port: smtpPort,
-            secure: smtpPort === 465,
-            auth: {
-              user: smtpUser,
-              pass: smtpPass,
-            },
-          };
+          );
+        },
+      } as nodemailer.TransportOptions;
 
       const transporter = nodemailer.createTransport(transporterOptions);
 
@@ -249,14 +277,18 @@ export class ContactsService {
         html: htmlContent,
       });
 
-      console.log(`Reply email sent successfully via Gmail SMTP to ${contact.email}`);
+      console.log(
+        `Reply email sent successfully via Gmail SMTP to ${contact.email}`,
+      );
       return {
         message: 'Reply sent successfully.',
         simulated: false,
         data: updatedContact,
       };
-    } catch (mailError: any) {
-      console.error('Gmail SMTP email delivery error:', mailError?.message || mailError);
+    } catch (mailError: unknown) {
+      const errorMessage =
+        mailError instanceof Error ? mailError.message : String(mailError);
+      console.error('Gmail SMTP email delivery error:', errorMessage);
       return {
         message: 'Reply saved, but email delivery failed.',
         simulated: false,
