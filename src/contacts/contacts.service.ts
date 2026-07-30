@@ -13,6 +13,7 @@ import { ConfigService } from '@nestjs/config';
 
 import { Subject } from 'rxjs';
 import * as nodemailer from 'nodemailer';
+import * as dns from 'dns';
 
 @Injectable()
 export class ContactsService {
@@ -215,16 +216,30 @@ export class ContactsService {
     `;
 
     try {
-      const transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: smtpPort === 465,
-        family: 4,
-        auth: {
-          user: smtpUser,
-          pass: smtpPass,
-        },
-      } as any);
+      if (dns.setDefaultResultOrder) {
+        dns.setDefaultResultOrder('ipv4first');
+      }
+
+      const isGmail = smtpHost.includes('gmail');
+      const transporterOptions: any = isGmail
+        ? {
+            service: 'gmail',
+            auth: {
+              user: smtpUser,
+              pass: smtpPass,
+            },
+          }
+        : {
+            host: smtpHost,
+            port: smtpPort,
+            secure: smtpPort === 465,
+            auth: {
+              user: smtpUser,
+              pass: smtpPass,
+            },
+          };
+
+      const transporter = nodemailer.createTransport(transporterOptions);
 
       await transporter.sendMail({
         from: `"Portfolio Contact" <${smtpUser}>`,
