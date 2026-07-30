@@ -87,6 +87,14 @@ export class AuthService {
     return { message: 'Signed out successfully' };
   }
 
+  async getProfile(userId: string) {
+    const user = await this.usersService.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    return user;
+  }
+
   async refreshTokens(userId: string, refreshToken: string): Promise<Tokens> {
     const user = await this.usersService.findByIdWithRefreshToken(userId);
     if (!user || !user.refreshTokenHash) {

@@ -3,6 +3,7 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Get,
   UseGuards,
   Body,
 } from '@nestjs/common';
@@ -17,6 +18,13 @@ import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  @HttpCode(HttpStatus.OK)
+  async getProfile(@GetCurrentUser('sub') userId: string) {
+    return this.authService.getProfile(userId);
+  }
 
   @Public()
   @Post('signup')
