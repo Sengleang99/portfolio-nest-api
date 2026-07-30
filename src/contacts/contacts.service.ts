@@ -12,7 +12,7 @@ import { Contact, ContactDocument } from './schemas/contact.schema';
 import { ConfigService } from '@nestjs/config';
 
 import { Subject } from 'rxjs';
-import * as sgMail from '@sendgrid/mail';
+import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class ContactsService {
@@ -156,13 +156,15 @@ export class ContactsService {
 
     this.contactStream$.next(); // notify dashboard real-time
 
-    const sendgridApiKey = (this.configService.get<string>('SENDGRID_API_KEY') || process.env.SENDGRID_API_KEY || '').trim();
-    const fromEmail = (this.configService.get<string>('SENDGRID_FROM_EMAIL') || process.env.SENDGRID_FROM_EMAIL || '').trim();
+    const smtpHost = this.configService.get<string>('SMTP_HOST') || process.env.SMTP_HOST;
+    const smtpPort = parseInt(this.configService.get<string>('SMTP_PORT') || process.env.SMTP_PORT || '587', 10);
+    const smtpUser = this.configService.get<string>('SMTP_USER') || process.env.SMTP_USER;
+    const smtpPass = this.configService.get<string>('SMTP_PASS') || process.env.SMTP_PASS;
 
-    if (!sendgridApiKey || !fromEmail) {
-      console.warn(`SendGrid not configured -> SENDGRID_API_KEY: "${sendgridApiKey ? '***' : ''}", SENDGRID_FROM_EMAIL: "${fromEmail}". Simulating mail send.`);
+    if (!smtpHost || !smtpUser || !smtpPass) {
+      console.warn('SMTP not configured -> SMTP_HOST / SMTP_USER / SMTP_PASS missing. Simulating mail send.');
       return {
-        message: 'Reply simulated successfully (SendGrid credentials missing).',
+        message: 'Reply simulated successfully (SMTP credentials missing).',
         simulated: true,
         data: updatedContact,
       };
@@ -192,11 +194,11 @@ export class ContactsService {
           <div class="content">
             <p>Hello <strong>${contact.username}</strong>,</p>
             <p>Thank you for reaching out. Here is the reply to your inquiry:</p>
-            
+
             <div class="message-bubble">
               ${replyMessage.replace(/\n/g, '<br>')}
             </div>
-            
+
             <div class="original-bubble">
               <strong style="display: block; margin-bottom: 4px; color: #475569;">Your Original Message:</strong>
               <em>"${contact.message}"</em>
@@ -213,23 +215,32 @@ export class ContactsService {
     `;
 
     try {
-      sgMail.setApiKey(sendgridApiKey);
-      await sgMail.send({
-        from: fromEmail,
+      const transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpPort === 465, // true for port 465, false for 587
+        auth: {
+          user: smtpUser,
+          pass: smtpPass,
+        },
+      });
+
+      await transporter.sendMail({
+        from: `"Portfolio Contact" <${smtpUser}>`,
         to: contact.email,
         subject: `Re: Contact Inquiry from ${contact.username}`,
         text: replyMessage,
         html: htmlContent,
       });
 
-      console.log(`Reply email sent successfully via SendGrid to ${contact.email}`);
+      console.log(`Reply email sent successfully via Gmail SMTP to ${contact.email}`);
       return {
         message: 'Reply sent successfully.',
         simulated: false,
         data: updatedContact,
       };
     } catch (mailError: any) {
-      console.error('SendGrid email delivery error:', mailError?.response?.body || mailError);
+      console.error('Gmail SMTP email delivery error:', mailError?.message || mailError);
       return {
         message: 'Reply saved, but email delivery failed.',
         simulated: false,
