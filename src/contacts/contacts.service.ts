@@ -229,8 +229,15 @@ export class ContactsService {
 
     try {
       const isSecure = smtpPort === 465;
+
+      // Resolve IPv4 address directly to bypass OS getaddrinfo IPv6 behavior
+      const ipv4Addresses = await dns.promises
+        .resolve4(smtpHost)
+        .catch(() => []);
+      const resolvedHost = ipv4Addresses[0] || smtpHost;
+
       const transporterOptions: nodemailer.TransportOptions = {
-        host: smtpHost,
+        host: resolvedHost,
         port: smtpPort,
         secure: isSecure,
         ...(isSecure ? {} : { requireTLS: true }),
@@ -238,32 +245,8 @@ export class ContactsService {
           user: smtpUser,
           pass: smtpPass,
         },
-        lookup: (
-          hostname: string,
-          _options: unknown,
-          callback: (
-            err: NodeJS.ErrnoException | null,
-            address?: string,
-            family?: number,
-          ) => void,
-        ) => {
-          dns.lookup(
-            hostname,
-            { family: 4 },
-            (
-              err: NodeJS.ErrnoException | null,
-              address: string | dns.LookupAddress[],
-              family: number,
-            ) => {
-              const targetAddress =
-                typeof address === 'string'
-                  ? address
-                  : Array.isArray(address) && address[0]
-                    ? address[0].address
-                    : undefined;
-              callback(err, targetAddress, family);
-            },
-          );
+        tls: {
+          servername: smtpHost,
         },
       } as nodemailer.TransportOptions;
 
