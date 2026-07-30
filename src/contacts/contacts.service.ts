@@ -14,6 +14,7 @@ import { ConfigService } from '@nestjs/config';
 import { Subject } from 'rxjs';
 import * as nodemailer from 'nodemailer';
 import * as dns from 'dns';
+import { Resend } from 'resend';
 
 @Injectable()
 export class ContactsService {
@@ -159,6 +160,14 @@ export class ContactsService {
 
     this.contactStream$.next(); // notify dashboard real-time
 
+    const resendApiKey =
+      this.configService.get<string>('RESEND_API_KEY') ||
+      process.env.RESEND_API_KEY;
+    const resendFromEmail =
+      this.configService.get<string>('RESEND_FROM_EMAIL') ||
+      process.env.RESEND_FROM_EMAIL ||
+      'onboarding@resend.dev';
+
     const smtpHost =
       this.configService.get<string>('SMTP_HOST') || process.env.SMTP_HOST;
     const smtpPort = parseInt(
@@ -171,17 +180,6 @@ export class ContactsService {
       this.configService.get<string>('SMTP_USER') || process.env.SMTP_USER;
     const smtpPass =
       this.configService.get<string>('SMTP_PASS') || process.env.SMTP_PASS;
-
-    if (!smtpHost || !smtpUser || !smtpPass) {
-      console.warn(
-        'SMTP not configured -> SMTP_HOST / SMTP_USER / SMTP_PASS missing. Simulating mail send.',
-      );
-      return {
-        message: 'Reply simulated successfully (SMTP credentials missing).',
-        simulated: true,
-        data: updatedContact,
-      };
-    }
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -227,10 +225,52 @@ export class ContactsService {
       </html>
     `;
 
+    // 1. Try Resend API (HTTP Port 443 - works on Railway & cloud hosts without SMTP block)
+    if (resendApiKey) {
+      try {
+        const resend = new Resend(resendApiKey);
+        const { error } = await resend.emails.send({
+          from: resendFromEmail,
+          to: contact.email,
+          subject: `Re: Contact Inquiry from ${contact.username}`,
+          text: replyMessage,
+          html: htmlContent,
+        });
+
+        if (!error) {
+          console.log(
+            `Reply email sent successfully via Resend API to ${contact.email}`,
+          );
+          return {
+            message: 'Reply sent successfully via Resend.',
+            simulated: false,
+            data: updatedContact,
+          };
+        }
+        console.warn('Resend API returned error, falling back to SMTP:', error);
+      } catch (resendError: unknown) {
+        const msg =
+          resendError instanceof Error
+            ? resendError.message
+            : String(resendError);
+        console.warn('Resend API call failed, falling back to SMTP:', msg);
+      }
+    }
+
+    // 2. Fallback to Nodemailer SMTP (for localhost or hosts where SMTP ports 587/465 are unblocked)
+    if (!smtpHost || !smtpUser || !smtpPass) {
+      console.warn(
+        'Neither Resend API nor SMTP configured properly. Simulating mail send.',
+      );
+      return {
+        message: 'Reply simulated successfully (No valid mail config found).',
+        simulated: true,
+        data: updatedContact,
+      };
+    }
+
     try {
       const isSecure = smtpPort === 465;
-
-      // Resolve IPv4 address directly to bypass OS getaddrinfo IPv6 behavior
       const ipv4Addresses = await dns.promises
         .resolve4(smtpHost)
         .catch(() => []);
