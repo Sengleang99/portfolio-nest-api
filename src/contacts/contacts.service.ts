@@ -218,12 +218,13 @@ export class ContactsService {
       const transporter = nodemailer.createTransport({
         host: smtpHost,
         port: smtpPort,
-        secure: smtpPort === 465, // true for port 465, false for 587
+        secure: smtpPort === 465,
+        family: 4,
         auth: {
           user: smtpUser,
           pass: smtpPass,
         },
-      });
+      } as any);
 
       await transporter.sendMail({
         from: `"Portfolio Contact" <${smtpUser}>`,
