@@ -19,7 +19,7 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('experiences')
 export class ExperiencesController {
-  constructor(private readonly experiencesService: ExperiencesService) {}
+  constructor(private readonly experiencesService: ExperiencesService) { }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -30,14 +30,12 @@ export class ExperiencesController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
   findAll(@Query() queryDto: QueryExperienceDto) {
     return this.experiencesService.findAll(queryDto);
   }
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
   findOne(@Param('id') id: string) {
     return this.experiencesService.findOne(id);
   }
